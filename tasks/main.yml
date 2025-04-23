@@ -12,6 +12,20 @@
     name: "{{ fail2ban_packages }}"
     state: present
 
+- name: Find default jails
+  ansible.builtin.find:
+    paths: /etc/fail2ban/jail.d
+    file_type: any
+  register: default_jails
+
+- name: Clear default jails
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ default_jails.files }}"
+  notify:
+    - Restart fail2ban
+
 - name: Create filters in filter.d
   ansible.builtin.copy:
     content: |
