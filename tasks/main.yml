@@ -12,15 +12,20 @@
     name: "{{ fail2ban_packages }}"
     state: present
 
-- name: Copy filters in filter.d
+- name: Create filters in filter.d
   ansible.builtin.copy:
-    src: "{{ fail2ban_filterd_path }}"
-    dest: /etc/fail2ban/filter.d/
+    content: |
+      [Definition]
+      {% for k, v in item.value.items() %}
+      {{ k }} = {{ v }}
+      {% endfor %}
+    dest: /etc/fail2ban/filter.d/{{ item.key }}.conf
     owner: root
     group: root
-    mode: "0640"
+    mode: "0644"
+  loop: "{{ fail2ban_filterd_configs | dict2items }}"
   when:
-    - fail2ban_filterd_path is defined
+    - fail2ban_filterd_configs is defined
   notify:
     - Restart fail2ban
 
@@ -30,7 +35,7 @@
     section: "{{ item.section }}"
     option: "{{ item.option }}"
     value: "{{ item.value }}"
-    mode: "0640"
+    mode: "0644"
   loop: "{{ fail2ban_base_configuration + fail2ban_configuration }}"
   notify:
     - Restart fail2ban
@@ -43,7 +48,7 @@
     section: "{{ item.section }}"
     option: "{{ item.option }}"
     value: "{{ item.value }}"
-    mode: "0640"
+    mode: "0644"
   loop: "{{ fail2ban_base_jail_configuration + fail2ban_jail_configuration }}"
   notify:
     - Restart fail2ban
@@ -59,7 +64,7 @@
   ansible.builtin.file:
     path: /var/log/auth.log
     state: touch
-    mode: "0640"
+    mode: "0644"
   when:
     - fail2ban_auth.stat.exists is defined
     - not fail2ban_auth.stat.exists
